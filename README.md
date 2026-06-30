@@ -1,66 +1,51 @@
-# Browser FPS Aim Trainer
+# Browser Aim Trainer
 
-A browser-based FPS aim trainer built with TypeScript, React, and Vite. Features a clean architecture with the game engine completely separated from the UI layer.
+A fast, lightweight browser-based aim trainer to sharpen your mouse accuracy and reaction time. Built with TypeScript, React, and Canvas 2D.
 
-## Architecture
+## Features
 
-```
-/src
-  /engine          — Pure TypeScript, zero React imports
-    Camera.ts      — Yaw/pitch state, CS-accurate sensitivity math
-    Projection.ts  — FOV-based angular-to-screen projection
-    TargetManager.ts — Target spawning/despawning
-    HitDetection.ts  — Click-to-hit logic
-    GameLoop.ts      — requestAnimationFrame loop
-    types.ts         — Shared interfaces (EngineConfig, Target, SessionStats)
-  /components      — React UI components
-    GameCanvas.tsx   — Canvas wrapper, owns GameLoop instance
-    SettingsPanel.tsx — Sensitivity, DPI, FOV controls
-    StatsOverlay.tsx  — Live stats display
-  /hooks
-    useGameEngine.ts — Bridges engine lifecycle to React
-  /state
-    settingsStore.ts — Settings persistence (localStorage)
-  /services
-    scoreService.ts  — Score/leaderboard stubs (ready for backend)
-```
+- **Point-and-click training** — Move crosshair to targets, click to hit
+- **Real-time stats** — Hits, accuracy %, average reaction time, score
+- **Customizable settings** — Sensitivity, DPI, FOV with cm/360 calculation
+- **Minimal & responsive** — No heavy 3D libraries, runs smoothly in any browser
+- **Clean architecture** — Game engine fully separated from UI layer
 
-## Key Design Decisions
-
-- **Engine isolation**: The `/engine` folder has zero React imports and can be tested or ported independently
-- **60fps loop outside React**: Game loop runs via `requestAnimationFrame`, stored in `useRef`, never triggers React re-renders
-- **Pointer Lock + CS sensitivity**: Uses the `m_yaw = 0.022` constant for Counter-Strike-accurate mouse feel
-- **FOV-based projection**: Canvas 2D rendering with proper angular projection, no 3D libraries
-- **Type-first design**: All engine types (`EngineConfig`, `SessionStats`, etc.) are serializable for future backend integration
-
-## Running
+## Quick Start
 
 ```bash
 npm install
 npm run dev
 ```
 
+Open http://localhost:5173 and click to start training.
+
 ## Controls
 
-- **Click** to start/resume
-- **Mouse movement** to aim (pointer lock)
-- **Click** to shoot
-- **ESC** to pause
-- **Settings** button for sensitivity/DPI/FOV configuration
+| Action | Input |
+|--------|-------|
+| Aim | Move mouse |
+| Shoot | Click |
+| Pause | Move mouse outside canvas |
+| Settings | Gear icon (top right) |
 
-## Sensitivity Math
+## Tech Stack
 
-Uses Counter-Strike's m_yaw constant:
+- **Frontend**: React 19, TypeScript, Vite
+- **Rendering**: Canvas 2D API
+- **State**: Custom store with localStorage persistence
+- **Architecture**: Framework-agnostic engine + React UI layer
+
+## Project Structure
+
 ```
-degrees = mouseMovement * sensitivity * 0.022
+src/
+├── engine/       # Pure TypeScript game engine (no React)
+├── components/   # React UI components
+├── hooks/        # React hooks bridging engine ↔ UI
+├── state/        # Settings store
+└── services/     # API stubs for future backend
 ```
 
-The settings panel shows `cm/360` for precise matching with other games.
+## License
 
-## Future Expansion
-
-The architecture supports:
-- Multiple game modes (via GameLoop configuration)
-- Accounts/authentication (swap localStorage in settingsStore)
-- Leaderboards (implement real API calls in /services)
-- Custom targets/scenarios (extend TargetManager)
+MIT

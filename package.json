@@ -1,7 +1,21 @@
 {
   "name": "browser-aim-trainer",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "A browser-based aim trainer to improve your mouse accuracy and reaction time. Features customizable sensitivity, real-time stats tracking, and a clean modular architecture.",
+  "keywords": [
+    "aim-trainer",
+    "fps",
+    "mouse-accuracy",
+    "reaction-time",
+    "gaming",
+    "typescript",
+    "react",
+    "vite",
+    "canvas"
+  ],
+  "author": "",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
