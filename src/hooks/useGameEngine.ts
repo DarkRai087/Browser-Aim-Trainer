@@ -74,7 +74,7 @@ export function useGameEngine(): UseGameEngineReturn {
   }, [handleStatsUpdate, handleGameStateChange]);
 
   const start = useCallback(() => {
-    if (!gameLoopRef.current) {
+    if (!gameLoopRef.current && canvasRef.current) {
       initializeEngine();
     }
     gameLoopRef.current?.start();

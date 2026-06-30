@@ -43,6 +43,9 @@ export class GameLoop {
   private boundHandleClick: (e: MouseEvent) => void;
   private boundHandlePointerLockChange: () => void;
 
+  private mouseX: number = 0;
+  private mouseY: number = 0;
+
   constructor(canvas: HTMLCanvasElement, config: Partial<EngineConfig> = {}) {
     this.canvas = canvas;
     const ctx = canvas.getContext('2d');
@@ -121,42 +124,50 @@ export class GameLoop {
   }
 
   /**
-   * Handle mouse movement (only when pointer locked)
+   * Handle mouse movement - track cursor position
    */
   private handleMouseMove(e: MouseEvent): void {
-    if (!this.isPointerLocked || !this.isRunning) return;
-    this.camera.handleMouseMove(e.movementX, e.movementY);
+    if (!this.isRunning) return;
+    
+    const rect = this.canvas.getBoundingClientRect();
+    this.mouseX = e.clientX - rect.left;
+    this.mouseY = e.clientY - rect.top;
   }
 
   /**
    * Handle click (shooting)
    */
   private handleClick(e: MouseEvent): void {
-    if (!this.isRunning) {
-      // Start game on first click if not running
-      this.requestPointerLock();
-      return;
-    }
-    
-    if (!this.isPointerLocked) {
-      this.requestPointerLock();
-      return;
-    }
+    if (!this.isRunning) return;
 
-    // Use center-screen hit detection (crosshair shooting)
-    const result = this.hitDetection.checkHitAngular(
-      this.camera.getState(),
-      this.targetManager.getActiveTargets()
-    );
+    const rect = this.canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    // Check if click hit any target (screen-space)
+    const targets = this.targetManager.getActiveTargets();
+    let hitTarget: typeof targets[0] | null = null;
+    
+    for (const target of targets) {
+      // Targets store screen position directly now
+      const dx = clickX - target.yaw;  // yaw = screenX
+      const dy = clickY - target.pitch; // pitch = screenY
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const screenRadius = target.radius; // radius = screen radius in pixels
+      
+      if (distance <= screenRadius) {
+        hitTarget = target;
+        break;
+      }
+    }
 
     this.stats.totalShots++;
 
-    if (result.hit && result.target) {
+    if (hitTarget) {
       this.stats.hits++;
-      if (result.reactionTime !== null) {
-        this.stats.reactionTimes.push(result.reactionTime);
-      }
-      this.targetManager.despawnTarget(result.target.id);
+      const reactionTime = Date.now() - hitTarget.spawnedAt;
+      this.stats.reactionTimes.push(reactionTime);
+      this.targetManager.despawnTarget(hitTarget.id);
     } else {
       this.stats.misses++;
     }
@@ -192,22 +203,15 @@ export class GameLoop {
     // Draw grid for spatial reference
     this.drawGrid();
     
-    // Get camera state
-    const cameraState = this.camera.getState();
-    
-    // Get and render targets
+    // Get and render targets at their screen positions
     const targets = this.targetManager.getActiveTargets();
-    const visibleTargets = this.hitDetection.getVisibleTargets(targets, cameraState);
     
-    for (const target of visibleTargets) {
-      this.drawTarget(target);
+    for (const target of targets) {
+      this.drawTargetAtPosition(target.yaw, target.pitch, target.radius);
     }
     
-    // Draw crosshair
-    this.drawCrosshair();
-    
-    // Draw debug info (optional)
-    this.drawDebugInfo(cameraState);
+    // Draw crosshair at mouse position
+    this.drawCrosshairAt(this.mouseX, this.mouseY);
   }
 
   /**
@@ -236,11 +240,9 @@ export class GameLoop {
   }
 
   /**
-   * Draw a target circle
+   * Draw a target circle at a specific screen position
    */
-  private drawTarget(target: ProjectedTarget): void {
-    const { screenX, screenY, screenRadius } = target;
-    
+  private drawTargetAtPosition(screenX: number, screenY: number, screenRadius: number): void {
     // Outer glow
     const gradient = this.ctx.createRadialGradient(
       screenX, screenY, screenRadius * 0.5,
@@ -274,48 +276,58 @@ export class GameLoop {
   }
 
   /**
-   * Draw crosshair at center
+   * Draw a target circle (legacy method for ProjectedTarget)
    */
-  private drawCrosshair(): void {
-    const centerX = this.config.width / 2;
-    const centerY = this.config.height / 2;
-    const size = 10;
-    const gap = 4;
+  private drawTarget(target: ProjectedTarget): void {
+    this.drawTargetAtPosition(target.screenX, target.screenY, target.screenRadius);
+  }
+
+  /**
+   * Draw crosshair at a specific position
+   */
+  private drawCrosshairAt(x: number, y: number): void {
+    const size = 12;
+    const gap = 5;
     
     this.ctx.strokeStyle = '#00ff00';
     this.ctx.lineWidth = 2;
     
     // Horizontal lines
     this.ctx.beginPath();
-    this.ctx.moveTo(centerX - size - gap, centerY);
-    this.ctx.lineTo(centerX - gap, centerY);
-    this.ctx.moveTo(centerX + gap, centerY);
-    this.ctx.lineTo(centerX + size + gap, centerY);
+    this.ctx.moveTo(x - size - gap, y);
+    this.ctx.lineTo(x - gap, y);
+    this.ctx.moveTo(x + gap, y);
+    this.ctx.lineTo(x + size + gap, y);
     
     // Vertical lines
-    this.ctx.moveTo(centerX, centerY - size - gap);
-    this.ctx.lineTo(centerX, centerY - gap);
-    this.ctx.moveTo(centerX, centerY + gap);
-    this.ctx.lineTo(centerX, centerY + size + gap);
+    this.ctx.moveTo(x, y - size - gap);
+    this.ctx.lineTo(x, y - gap);
+    this.ctx.moveTo(x, y + gap);
+    this.ctx.lineTo(x, y + size + gap);
     
     this.ctx.stroke();
     
     // Center dot
     this.ctx.fillStyle = '#00ff00';
     this.ctx.beginPath();
-    this.ctx.arc(centerX, centerY, 2, 0, Math.PI * 2);
+    this.ctx.arc(x, y, 2, 0, Math.PI * 2);
     this.ctx.fill();
+  }
+
+  /**
+   * Draw crosshair at center
+   */
+  private drawCrosshair(): void {
+    this.drawCrosshairAt(this.config.width / 2, this.config.height / 2);
   }
 
   /**
    * Draw debug information
    */
-  private drawDebugInfo(cameraState: { yaw: number; pitch: number }): void {
+  private drawDebugInfo(): void {
     this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     this.ctx.font = '12px monospace';
-    this.ctx.fillText(`Yaw: ${cameraState.yaw.toFixed(1)}°`, 10, 20);
-    this.ctx.fillText(`Pitch: ${cameraState.pitch.toFixed(1)}°`, 10, 35);
-    this.ctx.fillText(`cm/360: ${this.camera.getCmPer360().toFixed(1)}`, 10, 50);
+    this.ctx.fillText(`Mouse: ${this.mouseX.toFixed(0)}, ${this.mouseY.toFixed(0)}`, 10, 20);
   }
 
   /**
@@ -348,6 +360,7 @@ export class GameLoop {
     if (this.isRunning) return;
     
     this.isRunning = true;
+    this.isPointerLocked = true; // We don't use actual pointer lock anymore
     this.stats = this.createEmptyStats();
     this.stats.startedAt = Date.now();
     this.sessionStartTime = Date.now();
@@ -355,13 +368,22 @@ export class GameLoop {
     this.camera.reset();
     this.targetManager.reset();
     
-    // Add event listeners
-    document.addEventListener('mousemove', this.boundHandleMouseMove);
-    this.canvas.addEventListener('click', this.boundHandleClick);
-    document.addEventListener('pointerlockchange', this.boundHandlePointerLockChange);
+    // Update target manager with current canvas size
+    this.targetManager.updateConfig({
+      canvasWidth: this.config.width,
+      canvasHeight: this.config.height,
+    });
     
-    // Request pointer lock
-    this.requestPointerLock();
+    // Initialize mouse position to center
+    this.mouseX = this.config.width / 2;
+    this.mouseY = this.config.height / 2;
+    
+    // Add event listeners
+    this.canvas.addEventListener('mousemove', this.boundHandleMouseMove);
+    this.canvas.addEventListener('click', this.boundHandleClick);
+    
+    // Hide cursor over canvas
+    this.canvas.style.cursor = 'none';
     
     // Start the loop
     this.tick();
@@ -375,6 +397,7 @@ export class GameLoop {
     if (!this.isRunning) return;
     
     this.isRunning = false;
+    this.isPointerLocked = false;
     
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
@@ -382,14 +405,11 @@ export class GameLoop {
     }
     
     // Remove event listeners
-    document.removeEventListener('mousemove', this.boundHandleMouseMove);
+    this.canvas.removeEventListener('mousemove', this.boundHandleMouseMove);
     this.canvas.removeEventListener('click', this.boundHandleClick);
-    document.removeEventListener('pointerlockchange', this.boundHandlePointerLockChange);
     
-    // Exit pointer lock
-    if (document.pointerLockElement === this.canvas) {
-      document.exitPointerLock();
-    }
+    // Restore cursor
+    this.canvas.style.cursor = 'crosshair';
     
     this.updateStats();
     this.notifyGameStateChange();
@@ -499,7 +519,7 @@ export class GameLoop {
     this.ctx.fillRect(0, 0, width, height);
     
     this.drawGrid();
-    this.drawCrosshair();
+    this.drawCrosshairAt(width / 2, height / 2);
   }
 
   /**

@@ -6,14 +6,16 @@
 import type { Target } from './types';
 
 export interface TargetManagerConfig {
-  /** Minimum angular radius for targets in degrees */
+  /** Minimum radius for targets in pixels */
   minRadius: number;
-  /** Maximum angular radius for targets in degrees */
+  /** Maximum radius for targets in pixels */
   maxRadius: number;
-  /** Maximum yaw spread for target spawning in degrees */
-  maxYawSpread: number;
-  /** Maximum pitch spread for target spawning in degrees */
-  maxPitchSpread: number;
+  /** Canvas width for spawn bounds */
+  canvasWidth: number;
+  /** Canvas height for spawn bounds */
+  canvasHeight: number;
+  /** Margin from edges in pixels */
+  edgeMargin: number;
   /** Maximum number of active targets at once */
   maxActiveTargets: number;
   /** Minimum time between spawns in milliseconds */
@@ -21,10 +23,11 @@ export interface TargetManagerConfig {
 }
 
 const DEFAULT_TARGET_CONFIG: TargetManagerConfig = {
-  minRadius: 1.5,
-  maxRadius: 3,
-  maxYawSpread: 40,
-  maxPitchSpread: 25,
+  minRadius: 30,
+  maxRadius: 50,
+  canvasWidth: 1920,
+  canvasHeight: 1080,
+  edgeMargin: 100,
   maxActiveTargets: 1,
   spawnCooldown: 100,
 };
@@ -54,7 +57,7 @@ export class TargetManager {
   }
 
   /**
-   * Spawn a new target at a random position
+   * Spawn a new target at a random screen position
    * Returns the spawned target or null if spawn conditions not met
    */
   spawnTarget(currentTime: number = Date.now()): Target | null {
@@ -69,11 +72,20 @@ export class TargetManager {
       return null;
     }
 
+    const radius = this.randomRange(this.config.minRadius, this.config.maxRadius);
+    const margin = this.config.edgeMargin + radius;
+    
+    // Spawn within canvas bounds with margin
+    const minX = margin;
+    const maxX = this.config.canvasWidth - margin;
+    const minY = margin;
+    const maxY = this.config.canvasHeight - margin;
+
     const target: Target = {
       id: this.generateId(),
-      yaw: this.randomRange(-this.config.maxYawSpread, this.config.maxYawSpread),
-      pitch: this.randomRange(-this.config.maxPitchSpread, this.config.maxPitchSpread),
-      radius: this.randomRange(this.config.minRadius, this.config.maxRadius),
+      yaw: this.randomRange(minX, maxX),     // Using yaw as screenX
+      pitch: this.randomRange(minY, maxY),   // Using pitch as screenY
+      radius: radius,                         // Screen radius in pixels
       spawnedAt: currentTime,
       active: true,
     };

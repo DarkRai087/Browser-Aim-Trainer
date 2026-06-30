@@ -51,10 +51,10 @@ export const GameCanvas = memo(function GameCanvas({ onStatsChange }: GameCanvas
       />
       
       {!isRunning && (
-        <div className="start-overlay">
+        <div className="start-overlay" onClick={handleCanvasClick} style={{ cursor: 'pointer' }}>
           <div className="start-content">
             <h2>FPS Aim Trainer</h2>
-            <p>Click to start</p>
+            <p>Click anywhere to start</p>
             <div className="instructions">
               <p>Move mouse to aim</p>
               <p>Click to shoot targets</p>
@@ -65,10 +65,10 @@ export const GameCanvas = memo(function GameCanvas({ onStatsChange }: GameCanvas
       )}
 
       {isRunning && !isPointerLocked && (
-        <div className="paused-overlay">
-          <div className="paused-content">
+        <div className="paused-overlay" onClick={handleCanvasClick} style={{ cursor: 'pointer' }}>
+          <div className="paused-content" onClick={(e) => e.stopPropagation()}>
             <h2>Paused</h2>
-            <p>Click to resume</p>
+            <p>Click outside to resume</p>
             <button onClick={handleStop} className="stop-button">
               End Session
             </button>
