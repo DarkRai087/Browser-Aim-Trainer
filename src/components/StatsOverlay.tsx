@@ -15,12 +15,30 @@ export const StatsOverlay = memo(function StatsOverlay({ stats }: StatsOverlayPr
     return `${Math.round(ms)}ms`;
   };
 
+  const hitsDisplay = stats.targetCount > 0
+    ? `${stats.hits} / ${stats.targetCount}`
+    : `${stats.hits}`;
+
+  const progress = stats.targetCount > 0
+    ? Math.min(100, (stats.hits / stats.targetCount) * 100)
+    : null;
+
   return (
     <div className="stats-overlay">
       <div className="stat-item">
         <span className="stat-label">Hits</span>
-        <span className="stat-value">{stats.hits}</span>
+        <span className="stat-value">{hitsDisplay}</span>
       </div>
+
+      {progress !== null && (
+        <div className="stat-progress-bar-wrap">
+          <div
+            className="stat-progress-bar"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
+
       <div className="stat-item">
         <span className="stat-label">Accuracy</span>
         <span className="stat-value">{stats.accuracy.toFixed(1)}%</span>

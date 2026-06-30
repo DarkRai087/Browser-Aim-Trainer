@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -362,4 +364,352 @@ body {
 
 .reset-button:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* ─────────────────────────────────────────
+   Pre-Game Modal
+───────────────────────────────────────── */
+
+.pregame-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(12px);
+  z-index: 50;
+  animation: pregame-fade-in 0.35s ease;
+}
+
+@keyframes pregame-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.pregame-card {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(145deg, rgba(26, 26, 46, 0.96) 0%, rgba(15, 15, 30, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 40px 36px 32px;
+  width: 90%;
+  max-width: 520px;
+  box-shadow:
+    0 0 0 1px rgba(0, 255, 136, 0.08),
+    0 32px 80px rgba(0, 0, 0, 0.7),
+    0 0 60px rgba(0, 255, 136, 0.05);
+  animation: pregame-slide-up 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pregame-slide-up {
+  from { opacity: 0; transform: translateY(28px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Header */
+.pregame-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.pregame-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pregame-logo-icon {
+  font-size: 2rem;
+  filter: drop-shadow(0 0 12px rgba(255, 68, 68, 0.8));
+}
+
+.pregame-logo-text {
+  font-size: 1.6rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff 30%, rgba(255,255,255,0.6));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+.pregame-subtitle {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 400;
+  margin: 0;
+}
+
+/* Preset grid */
+.pregame-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.pregame-preset-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 8px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.pregame-preset-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.12), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.pregame-preset-btn:hover {
+  border-color: rgba(0, 255, 136, 0.5);
+  background: rgba(0, 255, 136, 0.07);
+  transform: translateY(-3px) scale(1.02);
+}
+
+.pregame-preset-btn:hover::before {
+  opacity: 1;
+}
+
+.pregame-preset-btn.active {
+  border-color: #00ff88;
+  background: rgba(0, 255, 136, 0.12);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.2), inset 0 0 20px rgba(0, 255, 136, 0.05);
+  transform: translateY(-2px);
+}
+
+.pregame-preset-btn.active::before {
+  opacity: 1;
+}
+
+.preset-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.preset-number {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.preset-desc {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 400;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.pregame-preset-btn.active .preset-desc {
+  color: rgba(0, 255, 136, 0.8);
+}
+
+/* Custom input */
+.pregame-custom-input-wrap {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, margin-bottom 0.3s ease;
+  opacity: 0;
+  margin-bottom: 0;
+}
+
+.pregame-custom-input-wrap.visible {
+  max-height: 80px;
+  opacity: 1;
+  margin-bottom: 4px;
+}
+
+.pregame-custom-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0 0;
+}
+
+.pregame-custom-input {
+  flex: 1;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 1.1rem;
+  font-family: inherit;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pregame-custom-input:focus {
+  border-color: #00ff88;
+  box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.15);
+}
+
+.pregame-custom-input.error {
+  border-color: #ff4444;
+  box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.15);
+}
+
+.pregame-custom-input::-webkit-inner-spin-button,
+.pregame-custom-input::-webkit-outer-spin-button {
+  opacity: 0;
+}
+
+.pregame-custom-label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.pregame-custom-error {
+  font-size: 0.75rem;
+  color: #ff6666;
+  margin: 4px 0 0 2px;
+}
+
+/* Summary line */
+.pregame-summary {
+  text-align: center;
+  margin: 16px 0 20px;
+  min-height: 20px;
+}
+
+.pregame-summary-text {
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* Start button */
+.pregame-start-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+  border: none;
+  border-radius: 14px;
+  color: #0a0a0f;
+  font-size: 1.05rem;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 24px rgba(0, 255, 136, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.pregame-start-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.pregame-start-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 32px rgba(0, 255, 136, 0.5);
+}
+
+.pregame-start-btn:hover::before {
+  opacity: 1;
+}
+
+.pregame-start-btn:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.pregame-start-text {
+  flex: 1;
+  text-align: center;
+}
+
+.pregame-start-arrow {
+  font-size: 1.25rem;
+  transition: transform 0.2s ease;
+}
+
+.pregame-start-btn:hover .pregame-start-arrow {
+  transform: translateX(4px);
+}
+
+/* Instructions footer */
+.pregame-instructions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.pregame-instructions span {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.28);
+  font-weight: 400;
+}
+
+/* ─────────────────────────────────────────
+   Stats Progress Bar (in StatsOverlay)
+───────────────────────────────────────── */
+.stat-progress-bar-wrap {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: -2px 0 4px;
+}
+
+.stat-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff88, #00cc6a);
+  border-radius: 2px;
+  transition: width 0.25s ease;
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
+}
+
+/* Responsive for small screens */
+@media (max-width: 480px) {
+  .pregame-card {
+    padding: 28px 18px 24px;
+  }
+
+  .pregame-presets {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pregame-logo-text {
+    font-size: 1.3rem;
+  }
+
+  .pregame-instructions {
+    gap: 10px;
+  }
 }

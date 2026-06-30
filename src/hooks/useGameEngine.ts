@@ -14,7 +14,7 @@ interface UseGameEngineReturn {
   isRunning: boolean;
   isPointerLocked: boolean;
   stats: SessionStats;
-  start: () => void;
+  start: (targetCount?: number) => void;
   stop: () => void;
   updateSettings: (settings: Partial<EngineConfig>) => void;
 }
@@ -29,6 +29,7 @@ const createEmptyStats = (): SessionStats => ({
   startedAt: 0,
   duration: 0,
   score: 0,
+  targetCount: 0,
 });
 
 export function useGameEngine(): UseGameEngineReturn {
@@ -73,9 +74,13 @@ export function useGameEngine(): UseGameEngineReturn {
     gameLoop.renderIdle();
   }, [handleStatsUpdate, handleGameStateChange]);
 
-  const start = useCallback(() => {
+  const start = useCallback((targetCount?: number) => {
     if (!gameLoopRef.current && canvasRef.current) {
       initializeEngine();
+    }
+    // Apply target count before starting
+    if (targetCount !== undefined) {
+      gameLoopRef.current?.updateConfig({ targetCount });
     }
     gameLoopRef.current?.start();
   }, [initializeEngine]);

@@ -3,9 +3,10 @@
  * Never re-renders mid-game
  */
 
-import { useEffect, memo } from 'react';
+import { useEffect, useState, useCallback, memo } from 'react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { StatsOverlay } from './StatsOverlay';
+import { PreGameModal } from './PreGameModal';
 
 interface GameCanvasProps {
   onStatsChange?: (stats: { hits: number; accuracy: number; avgReaction: number }) => void;
@@ -21,6 +22,9 @@ export const GameCanvas = memo(function GameCanvas({ onStatsChange }: GameCanvas
     stop,
   } = useGameEngine();
 
+  // Show pre-game modal when not running
+  const [showModal, setShowModal] = useState(true);
+
   useEffect(() => {
     if (onStatsChange) {
       onStatsChange({
@@ -31,44 +35,45 @@ export const GameCanvas = memo(function GameCanvas({ onStatsChange }: GameCanvas
     }
   }, [stats, onStatsChange]);
 
-  const handleCanvasClick = () => {
+  // When game stops, show the modal again
+  useEffect(() => {
     if (!isRunning) {
-      start();
+      setShowModal(true);
     }
-  };
+  }, [isRunning]);
 
-  const handleStop = (e: React.MouseEvent) => {
+  const handleStart = useCallback((targetCount: number) => {
+    setShowModal(false);
+    start(targetCount);
+  }, [start]);
+
+  const handleStop = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     stop();
-  };
+  }, [stop]);
+
+  const handleResumeClick = useCallback(() => {
+    // clicking outside paused content resumes (handled by canvas click)
+  }, []);
 
   return (
     <div className="game-canvas-container">
       <canvas
         ref={canvasRef}
         className="game-canvas"
-        onClick={handleCanvasClick}
       />
-      
-      {!isRunning && (
-        <div className="start-overlay" onClick={handleCanvasClick} style={{ cursor: 'pointer' }}>
-          <div className="start-content">
-            <h2>FPS Aim Trainer</h2>
-            <p>Click anywhere to start</p>
-            <div className="instructions">
-              <p>Move mouse to aim</p>
-              <p>Click to shoot targets</p>
-              <p>Press ESC to pause</p>
-            </div>
-          </div>
-        </div>
+
+      {/* Pre-game modal: shown when not running */}
+      {!isRunning && showModal && (
+        <PreGameModal onStart={handleStart} />
       )}
 
+      {/* Paused overlay: game is running but pointer escaped */}
       {isRunning && !isPointerLocked && (
-        <div className="paused-overlay" onClick={handleCanvasClick} style={{ cursor: 'pointer' }}>
+        <div className="paused-overlay" onClick={handleResumeClick} style={{ cursor: 'pointer' }}>
           <div className="paused-content" onClick={(e) => e.stopPropagation()}>
             <h2>Paused</h2>
-            <p>Click outside to resume</p>
+            <p>Move mouse back to resume</p>
             <button onClick={handleStop} className="stop-button">
               End Session
             </button>

@@ -94,6 +94,7 @@ export class GameLoop {
       startedAt: 0,
       duration: 0,
       score: 0,
+      targetCount: 0,
     };
   }
 
@@ -168,6 +169,14 @@ export class GameLoop {
       const reactionTime = Date.now() - hitTarget.spawnedAt;
       this.stats.reactionTimes.push(reactionTime);
       this.targetManager.despawnTarget(hitTarget.id);
+
+      // Auto-stop when target count goal is reached
+      const goal = this.config.targetCount;
+      if (goal > 0 && this.stats.hits >= goal) {
+        this.updateStats();
+        this.stop();
+        return;
+      }
     } else {
       this.stats.misses++;
     }
@@ -363,6 +372,7 @@ export class GameLoop {
     this.isPointerLocked = true; // We don't use actual pointer lock anymore
     this.stats = this.createEmptyStats();
     this.stats.startedAt = Date.now();
+    this.stats.targetCount = this.config.targetCount;
     this.sessionStartTime = Date.now();
     
     this.camera.reset();

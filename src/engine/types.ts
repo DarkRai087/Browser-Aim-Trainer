@@ -15,6 +15,8 @@ export type EngineConfig = {
   width: number;
   /** Canvas height in pixels */
   height: number;
+  /** Number of targets to hit before session ends (0 = unlimited) */
+  targetCount: number;
 };
 
 /** Default engine configuration */
@@ -24,6 +26,7 @@ export const DEFAULT_CONFIG: EngineConfig = {
   fov: 103,
   width: 1920,
   height: 1080,
+  targetCount: 0,
 };
 
 /** Target object - represents a clickable target in the game */
@@ -62,6 +65,8 @@ export type SessionStats = {
   duration: number;
   /** Score (can be calculated based on hits, speed, etc.) */
   score: number;
+  /** Target goal for this session (0 = unlimited) */
+  targetCount: number;
 };
 
 /** Camera state - current view orientation */
