@@ -6,6 +6,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { GameLoop } from '../engine/GameLoop';
 import type { SessionStats, GameState, EngineConfig } from '../engine/types';
+import type { GameModeType } from '../engine/gameModes';
 import { settingsStore } from '../state/settingsStore';
 import { crosshairStore } from '../state/crosshairStore';
 import { saveScore } from '../services/scoreService';
@@ -15,7 +16,7 @@ interface UseGameEngineReturn {
   isRunning: boolean;
   isPointerLocked: boolean;
   stats: SessionStats;
-  start: (targetCount?: number) => void;
+  start: (mode?: GameModeType, weapon?: string) => void;
   stop: () => void;
   updateSettings: (settings: Partial<EngineConfig>) => void;
 }
@@ -76,14 +77,19 @@ export function useGameEngine(): UseGameEngineReturn {
     gameLoop.renderIdle();
   }, [handleStatsUpdate, handleGameStateChange]);
 
-  const start = useCallback((targetCount?: number) => {
+  const start = useCallback((mode: GameModeType = 'flick', weapon?: string) => {
     if (!gameLoopRef.current && canvasRef.current) {
       initializeEngine();
     }
-    // Apply target count before starting
-    if (targetCount !== undefined) {
-      gameLoopRef.current?.updateConfig({ targetCount });
+    
+    // Set game mode
+    gameLoopRef.current?.setGameMode(mode);
+    
+    // Set spray pattern if in spray mode
+    if (mode === 'spray' && weapon) {
+      gameLoopRef.current?.setSprayPattern(weapon);
     }
+    
     gameLoopRef.current?.start();
   }, [initializeEngine]);
 

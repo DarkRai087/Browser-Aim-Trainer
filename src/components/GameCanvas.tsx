@@ -6,13 +6,15 @@
 import { useEffect, useState, useCallback, memo } from 'react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { StatsOverlay } from './StatsOverlay';
-import { PreGameModal } from './PreGameModal';
+import { PreGameMenu } from './PreGameMenu';
+import type { GameModeType } from '../engine/gameModes';
 
 interface GameCanvasProps {
   onStatsChange?: (stats: { hits: number; accuracy: number; avgReaction: number }) => void;
+  onOpenSettings?: () => void;
 }
 
-export const GameCanvas = memo(function GameCanvas({ onStatsChange }: GameCanvasProps) {
+export const GameCanvas = memo(function GameCanvas({ onStatsChange, onOpenSettings }: GameCanvasProps) {
   const {
     canvasRef,
     isRunning,
@@ -22,8 +24,9 @@ export const GameCanvas = memo(function GameCanvas({ onStatsChange }: GameCanvas
     stop,
   } = useGameEngine();
 
-  // Show pre-game modal when not running
-  const [showModal, setShowModal] = useState(true);
+  // Show pre-game menu when not running
+  const [showMenu, setShowMenu] = useState(true);
+  const [currentMode, setCurrentMode] = useState<GameModeType | null>(null);
 
   useEffect(() => {
     if (onStatsChange) {
@@ -35,16 +38,18 @@ export const GameCanvas = memo(function GameCanvas({ onStatsChange }: GameCanvas
     }
   }, [stats, onStatsChange]);
 
-  // When game stops, show the modal again
+  // When game stops, show the menu again
   useEffect(() => {
     if (!isRunning) {
-      setShowModal(true);
+      setShowMenu(true);
+      setCurrentMode(null);
     }
   }, [isRunning]);
 
-  const handleStart = useCallback((targetCount: number) => {
-    setShowModal(false);
-    start(targetCount);
+  const handleStart = useCallback((mode: GameModeType, weapon?: string) => {
+    setShowMenu(false);
+    setCurrentMode(mode);
+    start(mode, weapon);
   }, [start]);
 
   const handleStop = useCallback((e: React.MouseEvent) => {
@@ -52,9 +57,9 @@ export const GameCanvas = memo(function GameCanvas({ onStatsChange }: GameCanvas
     stop();
   }, [stop]);
 
-  const handleResumeClick = useCallback(() => {
-    // clicking outside paused content resumes (handled by canvas click)
-  }, []);
+  const handleOpenSettings = useCallback(() => {
+    onOpenSettings?.();
+  }, [onOpenSettings]);
 
   return (
     <div className="game-canvas-container">
@@ -63,17 +68,17 @@ export const GameCanvas = memo(function GameCanvas({ onStatsChange }: GameCanvas
         className="game-canvas"
       />
 
-      {/* Pre-game modal: shown when not running */}
-      {!isRunning && showModal && (
-        <PreGameModal onStart={handleStart} />
+      {/* Pre-game menu: shown when not running */}
+      {!isRunning && showMenu && (
+        <PreGameMenu onStart={handleStart} onSettings={handleOpenSettings} />
       )}
 
       {/* Paused overlay: game is running but pointer escaped */}
       {isRunning && !isPointerLocked && (
-        <div className="paused-overlay" onClick={handleResumeClick} style={{ cursor: 'pointer' }}>
+        <div className="paused-overlay" style={{ cursor: 'pointer' }}>
           <div className="paused-content" onClick={(e) => e.stopPropagation()}>
             <h2>Paused</h2>
-            <p>Move mouse back to resume</p>
+            <p>Move mouse back to canvas to resume</p>
             <button onClick={handleStop} className="stop-button">
               End Session
             </button>
@@ -81,7 +86,18 @@ export const GameCanvas = memo(function GameCanvas({ onStatsChange }: GameCanvas
         </div>
       )}
 
-      {isRunning && (
+      {/* End button - always visible when running */}
+      {isRunning && isPointerLocked && (
+        <button 
+          className="end-game-button"
+          onClick={handleStop}
+        >
+          End
+        </button>
+      )}
+
+      {/* Stats overlay - only show in flick mode (spray mode draws its own stats) */}
+      {isRunning && currentMode === 'flick' && (
         <StatsOverlay stats={stats} />
       )}
     </div>

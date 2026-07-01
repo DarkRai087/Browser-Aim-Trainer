@@ -11,7 +11,10 @@ import type { TargetManagerConfig } from './TargetManager';
 import { HitDetection } from './HitDetection';
 import { DEFAULT_CONFIG } from './types';
 import { DEFAULT_CROSSHAIR } from './crosshairTypes';
+import { SPRAY_PATTERNS } from './sprayPatterns';
 import type { CrosshairConfig } from './crosshairTypes';
+import type { SprayPattern, SprayPoint } from './sprayPatterns';
+import type { GameModeType } from './gameModes';
 import type {
   EngineConfig,
   SessionStats,
@@ -50,6 +53,20 @@ export class GameLoop {
   
   private crosshairConfig: CrosshairConfig = DEFAULT_CROSSHAIR;
 
+  // Game mode
+  private gameMode: GameModeType = 'flick';
+  
+  // Spray training state
+  private sprayPattern: SprayPattern | null = null;
+  private sprayStartTime: number = 0;
+  private sprayBulletIndex: number = 0;
+  private isSprayActive: boolean = false;
+  private sprayScore: number = 0;
+  private sprayAccuracyHistory: number[] = [];
+  private playerSprayPath: { x: number; y: number; time: number }[] = [];
+  private boundHandleMouseDown: (e: MouseEvent) => void;
+  private boundHandleMouseUp: (e: MouseEvent) => void;
+
   constructor(canvas: HTMLCanvasElement, config: Partial<EngineConfig> = {}) {
     this.canvas = canvas;
     const ctx = canvas.getContext('2d');
@@ -82,6 +99,8 @@ export class GameLoop {
     this.boundHandleMouseMove = this.handleMouseMove.bind(this);
     this.boundHandleClick = this.handleClick.bind(this);
     this.boundHandlePointerLockChange = this.handlePointerLockChange.bind(this);
+    this.boundHandleMouseDown = this.handleMouseDown.bind(this);
+    this.boundHandleMouseUp = this.handleMouseUp.bind(this);
   }
 
   /**
@@ -196,6 +215,220 @@ export class GameLoop {
     this.notifyGameStateChange();
   }
 
+  // Track bullet impacts for visualization
+  private bulletImpacts: { x: number; y: number; hit: boolean; time: number }[] = [];
+  private lastBulletTime: number = 0;
+  private isMouseDown: boolean = false;
+  private mouseDownTime: number = 0;
+
+  /**
+   * Handle mouse down (for spray mode)
+   */
+  private handleMouseDown(e: MouseEvent): void {
+    if (!this.isRunning || this.gameMode !== 'spray') return;
+
+    this.isMouseDown = true;
+    this.mouseDownTime = Date.now();
+
+    if (!this.sprayPattern) return;
+
+    // Reset if pattern was completed
+    if (this.isSprayActive && this.sprayBulletIndex >= this.sprayPattern.bullets) {
+      this.resetSpray();
+      return;
+    }
+
+    // Start spray if not active
+    if (!this.isSprayActive) {
+      this.startSpray();
+    }
+
+    // Fire ONE bullet immediately on click
+    this.fireBullet();
+  }
+
+  /**
+   * Handle mouse up (for spray mode)
+   */
+  private handleMouseUp(e: MouseEvent): void {
+    this.isMouseDown = false;
+    // Don't end spray on mouse up - let user tap or spray
+    // Spray ends when pattern completes or user clicks reset
+  }
+
+  /**
+   * Fire a single bullet
+   */
+  private fireBullet(): void {
+    if (!this.sprayPattern || this.sprayBulletIndex >= this.sprayPattern.bullets) {
+      return;
+    }
+    
+    const now = Date.now();
+    const fireRate = this.sprayPattern.fireRate;
+    
+    // Enforce fire rate
+    if (now - this.lastBulletTime < fireRate * 0.8) {
+      return;
+    }
+    
+    this.lastBulletTime = now;
+    const elapsedTime = now - this.sprayStartTime;
+    
+    // Get recoil for current bullet
+    const bulletIndex = this.sprayBulletIndex;
+    const recoilPoint = this.sprayPattern.pattern[bulletIndex];
+    
+    if (!recoilPoint) return;
+    
+    const centerX = this.config.width / 2;
+    const centerY = this.config.height / 2;
+    
+    // Record player crosshair position
+    this.playerSprayPath.push({
+      x: this.mouseX,
+      y: this.mouseY,
+      time: elapsedTime,
+    });
+    
+    // Bullet lands at: where you click/aim + recoil offset
+    // Recoil pushes bullets away from where you're aiming
+    const bulletX = this.mouseX + recoilPoint.x;
+    const bulletY = this.mouseY + recoilPoint.y;
+    
+    // Check if bullet hit the center target zone
+    const distFromCenter = Math.sqrt(
+      Math.pow(bulletX - centerX, 2) + Math.pow(bulletY - centerY, 2)
+    );
+    const isHit = distFromCenter < 50; // 50px tolerance for center target
+    
+    // Record impact
+    this.bulletImpacts.push({
+      x: bulletX,
+      y: bulletY,
+      hit: isHit,
+      time: now,
+    });
+    
+    // Update stats
+    this.stats.totalShots++;
+    if (isHit) {
+      this.stats.hits++;
+    } else {
+      this.stats.misses++;
+    }
+    
+    // Advance to next bullet
+    this.sprayBulletIndex++;
+    
+    // Update accuracy
+    this.stats.accuracy = this.stats.totalShots > 0 
+      ? (this.stats.hits / this.stats.totalShots) * 100 
+      : 0;
+    this.stats.score = Math.round(this.stats.accuracy * this.sprayBulletIndex / 3);
+    
+    this.updateStats();
+    
+    // Check if spray is complete
+    if (this.sprayBulletIndex >= this.sprayPattern.bullets) {
+      this.endSpray();
+    }
+  }
+
+  /**
+   * Start spray sequence
+   */
+  private startSpray(): void {
+    this.isSprayActive = true;
+    this.sprayStartTime = Date.now();
+    this.sprayBulletIndex = 0;
+    this.playerSprayPath = [];
+    this.bulletImpacts = [];
+    this.lastBulletTime = 0;
+    this.sprayScore = 0;
+    
+    // Reset stats for new spray
+    this.stats.hits = 0;
+    this.stats.misses = 0;
+    this.stats.totalShots = 0;
+    this.stats.accuracy = 0;
+    this.stats.score = 0;
+  }
+
+  /**
+   * End spray sequence and calculate score
+   */
+  private endSpray(): void {
+    // Keep isSprayActive true so player can see results and click to reset
+    // Pattern is complete when all bullets fired
+    if (this.sprayBulletIndex >= (this.sprayPattern?.bullets || 0)) {
+      this.sprayScore = this.stats.accuracy;
+      this.sprayAccuracyHistory.push(this.sprayScore);
+    }
+    
+    this.isMouseDown = false;
+  }
+
+  /**
+   * Calculate how accurately the player followed the spray pattern
+   */
+  private calculateSprayAccuracy(): number {
+    if (!this.sprayPattern || this.playerSprayPath.length < 2) return 0;
+    
+    let totalDeviation = 0;
+    let samples = 0;
+    
+    for (const playerPoint of this.playerSprayPath) {
+      // Find the expected pattern point at this time
+      const expectedPoint = this.getExpectedSprayPoint(playerPoint.time);
+      if (!expectedPoint) continue;
+      
+      // Player needs to move OPPOSITE to the recoil
+      // So if pattern goes down (positive y), player should go down (positive y on screen)
+      const expectedX = -expectedPoint.x; // Opposite direction
+      const expectedY = -expectedPoint.y; // Opposite direction
+      
+      const dx = playerPoint.x - expectedX;
+      const dy = playerPoint.y - expectedY;
+      const deviation = Math.sqrt(dx * dx + dy * dy);
+      
+      totalDeviation += deviation;
+      samples++;
+    }
+    
+    if (samples === 0) return 0;
+    
+    const avgDeviation = totalDeviation / samples;
+    // Convert deviation to accuracy (0-100%)
+    // 0 deviation = 100%, 50+ pixels deviation = 0%
+    const accuracy = Math.max(0, Math.min(100, 100 - (avgDeviation * 2)));
+    return accuracy;
+  }
+
+  /**
+   * Get expected spray pattern point at a given time
+   */
+  private getExpectedSprayPoint(time: number): SprayPoint | null {
+    if (!this.sprayPattern) return null;
+    
+    const pattern = this.sprayPattern.pattern;
+    
+    // Find the two points to interpolate between
+    for (let i = 0; i < pattern.length - 1; i++) {
+      if (time >= pattern[i].time && time <= pattern[i + 1].time) {
+        const t = (time - pattern[i].time) / (pattern[i + 1].time - pattern[i].time);
+        return {
+          x: pattern[i].x + (pattern[i + 1].x - pattern[i].x) * t,
+          y: pattern[i].y + (pattern[i + 1].y - pattern[i].y) * t,
+          time: time,
+        };
+      }
+    }
+    
+    // Return last point if time exceeds pattern
+    return pattern[pattern.length - 1];
+  }
+
   /**
    * Request pointer lock on canvas
    */
@@ -208,23 +441,233 @@ export class GameLoop {
    */
   private render(): void {
     const { width, height } = this.config;
-    
+
     // Clear canvas
     this.ctx.fillStyle = '#1a1a2e';
     this.ctx.fillRect(0, 0, width, height);
-    
+
     // Draw grid for spatial reference
     this.drawGrid();
-    
-    // Get and render targets at their screen positions
-    const targets = this.targetManager.getActiveTargets();
-    
-    for (const target of targets) {
-      this.drawTargetAtPosition(target.yaw, target.pitch, target.radius);
+
+    if (this.gameMode === 'spray') {
+      this.renderSprayMode();
+    } else {
+      // Flick mode - render targets
+      const targets = this.targetManager.getActiveTargets();
+      for (const target of targets) {
+        this.drawTargetAtPosition(target.yaw, target.pitch, target.radius);
+      }
+      // Draw crosshair at mouse position
+      this.drawCrosshairAt(this.mouseX, this.mouseY);
     }
+  }
+
+  /**
+   * Render spray pattern training mode
+   */
+  private renderSprayMode(): void {
+    const { width, height } = this.config;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    if (!this.sprayPattern) return;
+
+    // Draw target zone at center (where bullets should hit)
+    this.ctx.beginPath();
+    this.ctx.arc(centerX, centerY, 50, 0, Math.PI * 2);
+    this.ctx.fillStyle = 'rgba(0, 255, 136, 0.15)';
+    this.ctx.fill();
+    this.ctx.strokeStyle = 'rgba(0, 255, 136, 0.5)';
+    this.ctx.lineWidth = 3;
+    this.ctx.stroke();
     
+    // Center dot
+    this.ctx.beginPath();
+    this.ctx.arc(centerX, centerY, 6, 0, Math.PI * 2);
+    this.ctx.fillStyle = '#00ff88';
+    this.ctx.fill();
+
+    // Draw bullet impacts (they stay visible)
+    for (const impact of this.bulletImpacts) {
+      // Impact hole
+      this.ctx.beginPath();
+      this.ctx.arc(impact.x, impact.y, impact.hit ? 5 : 4, 0, Math.PI * 2);
+      this.ctx.fillStyle = impact.hit ? '#00ff88' : '#ff4444';
+      this.ctx.fill();
+      
+      // Outer ring
+      this.ctx.beginPath();
+      this.ctx.arc(impact.x, impact.y, impact.hit ? 8 : 6, 0, Math.PI * 2);
+      this.ctx.strokeStyle = impact.hit ? 'rgba(0, 255, 136, 0.5)' : 'rgba(255, 68, 68, 0.5)';
+      this.ctx.lineWidth = 1;
+      this.ctx.stroke();
+    }
+
+    // Show where next bullet will land (preview) based on current aim
+    if (this.sprayBulletIndex < this.sprayPattern.bullets) {
+      const nextRecoil = this.sprayPattern.pattern[this.sprayBulletIndex];
+      if (nextRecoil) {
+        // Predicted impact position = crosshair + recoil
+        const predictedX = this.mouseX + nextRecoil.x;
+        const predictedY = this.mouseY + nextRecoil.y;
+        
+        // Draw predicted impact (ghost circle)
+        this.ctx.beginPath();
+        this.ctx.arc(predictedX, predictedY, 10, 0, Math.PI * 2);
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+        
+        // X marker at predicted impact
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(predictedX - 4, predictedY - 4);
+        this.ctx.lineTo(predictedX + 4, predictedY + 4);
+        this.ctx.moveTo(predictedX + 4, predictedY - 4);
+        this.ctx.lineTo(predictedX - 4, predictedY + 4);
+        this.ctx.stroke();
+      }
+    }
+
+    // Draw reference pattern in corner
+    this.drawSprayPattern(centerX, centerY);
+
     // Draw crosshair at mouse position
     this.drawCrosshairAt(this.mouseX, this.mouseY);
+
+    // Draw spray info
+    this.drawSprayInfo();
+  }
+
+  /**
+   * Draw the spray pattern reference (small, in corner)
+   */
+  private drawSprayPattern(centerX: number, centerY: number): void {
+    if (!this.sprayPattern) return;
+
+    const pattern = this.sprayPattern.pattern;
+    
+    // Box position and size
+    const boxX = 10;
+    const boxY = this.config.height - 170;
+    const boxW = 140;
+    const boxH = 160;
+    
+    // Pattern origin (near bottom of box, pattern goes UP from here)
+    const refX = boxX + boxW / 2;
+    const refY = boxY + boxH - 25; // Start near bottom
+    const scale = 0.3; // Scale down the pattern
+    
+    // Background
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    this.ctx.fillRect(boxX, boxY, boxW, boxH);
+    
+    // Label
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    this.ctx.font = '11px monospace';
+    this.ctx.fillText('Recoil Pattern', boxX + 10, boxY + 18);
+    
+    // Draw pattern line (Y is negative in pattern, so adding it moves UP on screen)
+    this.ctx.beginPath();
+    this.ctx.moveTo(refX + pattern[0].x * scale, refY + pattern[0].y * scale);
+    
+    for (let i = 1; i < pattern.length; i++) {
+      this.ctx.lineTo(refX + pattern[i].x * scale, refY + pattern[i].y * scale);
+    }
+    
+    this.ctx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.stroke();
+
+    // Draw bullet dots
+    for (let i = 0; i < pattern.length; i++) {
+      const point = pattern[i];
+      const isFired = i < this.sprayBulletIndex;
+      
+      this.ctx.beginPath();
+      this.ctx.arc(refX + point.x * scale, refY + point.y * scale, isFired ? 3 : 2, 0, Math.PI * 2);
+      this.ctx.fillStyle = isFired ? '#ff6666' : 'rgba(255, 100, 100, 0.4)';
+      this.ctx.fill();
+    }
+    
+    // Show current bullet indicator
+    if (this.sprayBulletIndex < pattern.length) {
+      const currentPoint = pattern[this.sprayBulletIndex];
+      this.ctx.beginPath();
+      this.ctx.arc(refX + currentPoint.x * scale, refY + currentPoint.y * scale, 5, 0, Math.PI * 2);
+      this.ctx.strokeStyle = '#ffff00';
+      this.ctx.lineWidth = 2;
+      this.ctx.stroke();
+    }
+  }
+
+  /**
+   * Draw spray mode info overlay
+   */
+  private drawSprayInfo(): void {
+    const { width } = this.config;
+    
+    // Stats panel
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    this.ctx.fillRect(width - 220, 10, 210, 130);
+    
+    this.ctx.fillStyle = '#fff';
+    this.ctx.font = 'bold 14px monospace';
+    this.ctx.fillText(`${this.sprayPattern?.name || 'Weapon'}`, width - 210, 32);
+    
+    this.ctx.font = '13px monospace';
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    this.ctx.fillText(`Bullets: ${this.sprayBulletIndex}/${this.sprayPattern?.bullets || 0}`, width - 210, 55);
+    
+    // Accuracy with color coding
+    const accuracy = this.stats.accuracy;
+    this.ctx.fillStyle = accuracy >= 70 ? '#00ff88' : accuracy >= 40 ? '#ffaa00' : '#ff4444';
+    this.ctx.fillText(`Accuracy: ${accuracy.toFixed(1)}%`, width - 210, 75);
+    
+    this.ctx.fillStyle = '#00ff88';
+    this.ctx.fillText(`Hits: ${this.stats.hits}`, width - 210, 95);
+    this.ctx.fillStyle = '#ff4444';
+    this.ctx.fillText(`Miss: ${this.stats.misses}`, width - 110, 95);
+    
+    // Instructions
+    this.ctx.font = '11px monospace';
+    if (!this.isSprayActive) {
+      this.ctx.fillStyle = '#00ff88';
+      this.ctx.fillText('Click to tap / Hold to spray', width - 210, 120);
+    } else if (this.sprayBulletIndex >= (this.sprayPattern?.bullets || 0)) {
+      this.ctx.fillStyle = '#ff9500';
+      this.ctx.fillText('Pattern complete! Click to reset', width - 210, 120);
+    } else {
+      this.ctx.fillStyle = this.isMouseDown ? '#ff9500' : '#00ff88';
+      this.ctx.fillText(this.isMouseDown ? 'Spraying...' : 'Click/Hold to continue', width - 210, 120);
+    }
+
+    // Instructions panel
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    this.ctx.font = '12px sans-serif';
+    this.ctx.fillText('Pull crosshair DOWN to control recoil • White circle = bullet landing spot • Hit green target!', 
+      this.config.width / 2 - 220, this.config.height - 20);
+  }
+  
+  /**
+   * Reset spray for another attempt
+   */
+  resetSpray(): void {
+    this.isSprayActive = false;
+    this.sprayBulletIndex = 0;
+    this.bulletImpacts = [];
+    this.playerSprayPath = [];
+    this.sprayScore = 0;
+    this.isMouseDown = false;
+    this.lastBulletTime = 0;
+    
+    this.stats.hits = 0;
+    this.stats.misses = 0;
+    this.stats.totalShots = 0;
+    this.stats.accuracy = 0;
+    this.stats.score = 0;
+    this.updateStats();
   }
 
   /**
@@ -396,13 +839,22 @@ export class GameLoop {
    */
   private tick = (): void => {
     if (!this.isRunning) return;
-    
-    // Spawn targets as needed
-    this.targetManager.spawnTarget();
-    
+
+    if (this.gameMode === 'spray') {
+      // Auto-fire when HOLDING mouse button (not just clicking)
+      // Only start continuous fire after 150ms hold to allow single taps
+      const holdTime = Date.now() - this.mouseDownTime;
+      if (this.isMouseDown && this.isSprayActive && holdTime > 150) {
+        this.fireBullet();
+      }
+    } else {
+      // Spawn targets as needed for flick mode
+      this.targetManager.spawnTarget();
+    }
+
     // Render
     this.render();
-    
+
     // Schedule next frame
     this.animationFrameId = requestAnimationFrame(this.tick);
   };
@@ -424,11 +876,17 @@ export class GameLoop {
     this.isPointerLocked = true; // We don't use actual pointer lock anymore
     this.stats = this.createEmptyStats();
     this.stats.startedAt = Date.now();
-    this.stats.targetCount = this.config.targetCount;
     this.sessionStartTime = Date.now();
     
     this.camera.reset();
     this.targetManager.reset();
+    
+    // Reset spray state
+    this.isSprayActive = false;
+    this.sprayBulletIndex = 0;
+    this.sprayScore = 0;
+    this.sprayAccuracyHistory = [];
+    this.playerSprayPath = [];
     
     // Update target manager with current canvas size
     this.targetManager.updateConfig({
@@ -442,7 +900,13 @@ export class GameLoop {
     
     // Add event listeners
     this.canvas.addEventListener('mousemove', this.boundHandleMouseMove);
-    this.canvas.addEventListener('click', this.boundHandleClick);
+    
+    if (this.gameMode === 'spray') {
+      this.canvas.addEventListener('mousedown', this.boundHandleMouseDown);
+      this.canvas.addEventListener('mouseup', this.boundHandleMouseUp);
+    } else {
+      this.canvas.addEventListener('click', this.boundHandleClick);
+    }
     
     // Hide cursor over canvas
     this.canvas.style.cursor = 'none';
@@ -453,6 +917,27 @@ export class GameLoop {
   }
 
   /**
+   * Set game mode
+   */
+  setGameMode(mode: GameModeType): void {
+    this.gameMode = mode;
+  }
+
+  /**
+   * Set spray pattern by weapon ID
+   */
+  setSprayPattern(weaponId: string): void {
+    this.sprayPattern = SPRAY_PATTERNS[weaponId] || null;
+  }
+
+  /**
+   * Get current game mode
+   */
+  getGameMode(): GameModeType {
+    return this.gameMode;
+  }
+
+  /**
    * Stop the game loop
    */
   stop(): void {
@@ -460,6 +945,7 @@ export class GameLoop {
     
     this.isRunning = false;
     this.isPointerLocked = false;
+    this.isSprayActive = false;
     
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
@@ -469,6 +955,8 @@ export class GameLoop {
     // Remove event listeners
     this.canvas.removeEventListener('mousemove', this.boundHandleMouseMove);
     this.canvas.removeEventListener('click', this.boundHandleClick);
+    this.canvas.removeEventListener('mousedown', this.boundHandleMouseDown);
+    this.canvas.removeEventListener('mouseup', this.boundHandleMouseUp);
     
     // Restore cursor
     this.canvas.style.cursor = 'crosshair';

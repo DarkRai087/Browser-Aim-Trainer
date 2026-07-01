@@ -145,6 +145,27 @@ body {
   transform: translateY(-2px);
 }
 
+.end-game-button {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: rgba(255, 68, 68, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 100;
+}
+
+.end-game-button:hover {
+  background: rgba(255, 68, 68, 1);
+  transform: scale(1.05);
+}
+
 .stats-overlay {
   position: absolute;
   top: 20px;
@@ -1049,6 +1070,186 @@ body {
 .cs2-apply-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+}
+
+/* ─────────────────────────────────────────
+   Pre-Game Menu
+───────────────────────────────────────── */
+.pregame-menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+  z-index: 50;
+}
+
+.pregame-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pregame-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.title-icon {
+  font-size: 1.3rem;
+}
+
+.pregame-settings-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pregame-settings-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.pregame-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  gap: 30px;
+}
+
+.mode-section,
+.weapon-section {
+  text-align: center;
+  width: 100%;
+  max-width: 600px;
+}
+
+.mode-section h2,
+.weapon-section h2 {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.mode-card.selected {
+  background: rgba(0, 255, 136, 0.1);
+  border-color: #00ff88;
+}
+
+.mode-icon {
+  font-size: 2rem;
+}
+
+.mode-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.mode-desc {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.weapon-grid {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.weapon-card {
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.weapon-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.weapon-card.selected {
+  background: rgba(255, 149, 0, 0.15);
+  border-color: #ff9500;
+}
+
+.weapon-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.start-btn {
+  padding: 16px 48px;
+  background: linear-gradient(135deg, #00ff88, #00cc6a);
+  border: none;
+  border-radius: 12px;
+  color: #000;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 10px;
+}
+
+.start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 255, 136, 0.3);
+}
+
+.pregame-tips {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.85rem;
+  max-width: 400px;
 }
 
 .export-btn,
