@@ -13,7 +13,7 @@ import { DEFAULT_CONFIG } from './types';
 import { DEFAULT_CROSSHAIR } from './crosshairTypes';
 import { SPRAY_PATTERNS } from './sprayPatterns';
 import type { CrosshairConfig } from './crosshairTypes';
-import type { SprayPattern, SprayPoint } from './sprayPatterns';
+import type { SprayPattern } from './sprayPatterns';
 import type { GameModeType } from './gameModes';
 import type {
   EngineConfig,
@@ -21,7 +21,6 @@ import type {
   GameState,
   OnStatsUpdateCallback,
   OnGameStateChangeCallback,
-  ProjectedTarget,
 } from './types';
 
 export class GameLoop {
@@ -31,7 +30,6 @@ export class GameLoop {
   private camera: Camera;
   private projection: Projection;
   private targetManager: TargetManager;
-  private hitDetection: HitDetection;
   
   private config: EngineConfig;
   private isRunning: boolean = false;
@@ -39,14 +37,12 @@ export class GameLoop {
   private animationFrameId: number | null = null;
   
   private stats: SessionStats;
-  private sessionStartTime: number = 0;
   
   private onStatsUpdate: OnStatsUpdateCallback | null = null;
   private onGameStateChange: OnGameStateChangeCallback | null = null;
   
   private boundHandleMouseMove: (e: MouseEvent) => void;
   private boundHandleClick: (e: MouseEvent) => void;
-  private boundHandlePointerLockChange: () => void;
 
   private mouseX: number = 0;
   private mouseY: number = 0;
@@ -90,7 +86,8 @@ export class GameLoop {
     });
     
     this.targetManager = new TargetManager();
-    this.hitDetection = new HitDetection(this.projection);
+    // HitDetection available for future use
+    new HitDetection(this.projection);
     
     // Initialize stats
     this.stats = this.createEmptyStats();
@@ -98,7 +95,6 @@ export class GameLoop {
     // Bind event handlers
     this.boundHandleMouseMove = this.handleMouseMove.bind(this);
     this.boundHandleClick = this.handleClick.bind(this);
-    this.boundHandlePointerLockChange = this.handlePointerLockChange.bind(this);
     this.boundHandleMouseDown = this.handleMouseDown.bind(this);
     this.boundHandleMouseUp = this.handleMouseUp.bind(this);
   }
@@ -207,14 +203,6 @@ export class GameLoop {
     this.updateStats();
   }
 
-  /**
-   * Handle pointer lock state changes
-   */
-  private handlePointerLockChange(): void {
-    this.isPointerLocked = document.pointerLockElement === this.canvas;
-    this.notifyGameStateChange();
-  }
-
   // Track bullet impacts for visualization
   private bulletImpacts: { x: number; y: number; hit: boolean; time: number }[] = [];
   private lastBulletTime: number = 0;
@@ -224,7 +212,7 @@ export class GameLoop {
   /**
    * Handle mouse down (for spray mode)
    */
-  private handleMouseDown(e: MouseEvent): void {
+  private handleMouseDown(_e: MouseEvent): void {
     if (!this.isRunning || this.gameMode !== 'spray') return;
 
     this.isMouseDown = true;
@@ -250,7 +238,7 @@ export class GameLoop {
   /**
    * Handle mouse up (for spray mode)
    */
-  private handleMouseUp(e: MouseEvent): void {
+  private handleMouseUp(_e: MouseEvent): void {
     this.isMouseDown = false;
     // Don't end spray on mouse up - let user tap or spray
     // Spray ends when pattern completes or user clicks reset
@@ -369,72 +357,6 @@ export class GameLoop {
     this.isMouseDown = false;
   }
 
-  /**
-   * Calculate how accurately the player followed the spray pattern
-   */
-  private calculateSprayAccuracy(): number {
-    if (!this.sprayPattern || this.playerSprayPath.length < 2) return 0;
-    
-    let totalDeviation = 0;
-    let samples = 0;
-    
-    for (const playerPoint of this.playerSprayPath) {
-      // Find the expected pattern point at this time
-      const expectedPoint = this.getExpectedSprayPoint(playerPoint.time);
-      if (!expectedPoint) continue;
-      
-      // Player needs to move OPPOSITE to the recoil
-      // So if pattern goes down (positive y), player should go down (positive y on screen)
-      const expectedX = -expectedPoint.x; // Opposite direction
-      const expectedY = -expectedPoint.y; // Opposite direction
-      
-      const dx = playerPoint.x - expectedX;
-      const dy = playerPoint.y - expectedY;
-      const deviation = Math.sqrt(dx * dx + dy * dy);
-      
-      totalDeviation += deviation;
-      samples++;
-    }
-    
-    if (samples === 0) return 0;
-    
-    const avgDeviation = totalDeviation / samples;
-    // Convert deviation to accuracy (0-100%)
-    // 0 deviation = 100%, 50+ pixels deviation = 0%
-    const accuracy = Math.max(0, Math.min(100, 100 - (avgDeviation * 2)));
-    return accuracy;
-  }
-
-  /**
-   * Get expected spray pattern point at a given time
-   */
-  private getExpectedSprayPoint(time: number): SprayPoint | null {
-    if (!this.sprayPattern) return null;
-    
-    const pattern = this.sprayPattern.pattern;
-    
-    // Find the two points to interpolate between
-    for (let i = 0; i < pattern.length - 1; i++) {
-      if (time >= pattern[i].time && time <= pattern[i + 1].time) {
-        const t = (time - pattern[i].time) / (pattern[i + 1].time - pattern[i].time);
-        return {
-          x: pattern[i].x + (pattern[i + 1].x - pattern[i].x) * t,
-          y: pattern[i].y + (pattern[i + 1].y - pattern[i].y) * t,
-          time: time,
-        };
-      }
-    }
-    
-    // Return last point if time exceeds pattern
-    return pattern[pattern.length - 1];
-  }
-
-  /**
-   * Request pointer lock on canvas
-   */
-  private requestPointerLock(): void {
-    this.canvas.requestPointerLock();
-  }
 
   /**
    * Main render loop
@@ -543,7 +465,7 @@ export class GameLoop {
   /**
    * Draw the spray pattern reference (small, in corner)
    */
-  private drawSprayPattern(centerX: number, centerY: number): void {
+  private drawSprayPattern(_centerX: number, _centerY: number): void {
     if (!this.sprayPattern) return;
 
     const pattern = this.sprayPattern.pattern;
@@ -732,13 +654,6 @@ export class GameLoop {
   }
 
   /**
-   * Draw a target circle (legacy method for ProjectedTarget)
-   */
-  private drawTarget(target: ProjectedTarget): void {
-    this.drawTargetAtPosition(target.screenX, target.screenY, target.screenRadius);
-  }
-
-  /**
    * Draw crosshair at a specific position
    */
   private drawCrosshairAt(x: number, y: number): void {
@@ -819,22 +734,6 @@ export class GameLoop {
   }
 
   /**
-   * Draw crosshair at center
-   */
-  private drawCrosshair(): void {
-    this.drawCrosshairAt(this.config.width / 2, this.config.height / 2);
-  }
-
-  /**
-   * Draw debug information
-   */
-  private drawDebugInfo(): void {
-    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-    this.ctx.font = '12px monospace';
-    this.ctx.fillText(`Mouse: ${this.mouseX.toFixed(0)}, ${this.mouseY.toFixed(0)}`, 10, 20);
-  }
-
-  /**
    * Main game loop tick
    */
   private tick = (): void => {
@@ -876,7 +775,6 @@ export class GameLoop {
     this.isPointerLocked = true; // We don't use actual pointer lock anymore
     this.stats = this.createEmptyStats();
     this.stats.startedAt = Date.now();
-    this.sessionStartTime = Date.now();
     
     this.camera.reset();
     this.targetManager.reset();

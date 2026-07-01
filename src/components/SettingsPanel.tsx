@@ -4,7 +4,6 @@
 
 import { useState, useEffect, memo, useCallback } from 'react';
 import { settingsStore } from '../state/settingsStore';
-import { DEFAULT_CONFIG } from '../engine/types';
 import type { EngineConfig } from '../engine/types';
 import { CrosshairCustomizer } from './CrosshairCustomizer';
 

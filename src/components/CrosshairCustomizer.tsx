@@ -4,7 +4,7 @@
 
 import { useState, useEffect, memo, useCallback } from 'react';
 import { crosshairStore } from '../state/crosshairStore';
-import { CROSSHAIR_PRESETS, DEFAULT_CROSSHAIR, isCS2Code, cs2SettingsToConfig, DEFAULT_CS2_SETTINGS } from '../engine/crosshairTypes';
+import { CROSSHAIR_PRESETS, isCS2Code, cs2SettingsToConfig, DEFAULT_CS2_SETTINGS } from '../engine/crosshairTypes';
 import type { CrosshairConfig, CrosshairStyle, CS2CrosshairSettings } from '../engine/crosshairTypes';
 
 export const CrosshairCustomizer = memo(function CrosshairCustomizer() {
@@ -14,7 +14,7 @@ export const CrosshairCustomizer = memo(function CrosshairCustomizer() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [importError, setImportError] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
-  const [isCS2Format, setIsCS2Format] = useState(false);
+  const [_isCS2Format, setIsCS2Format] = useState(false);
   const [showCS2Manual, setShowCS2Manual] = useState(false);
   const [cs2Settings, setCS2Settings] = useState<CS2CrosshairSettings>(DEFAULT_CS2_SETTINGS);
 

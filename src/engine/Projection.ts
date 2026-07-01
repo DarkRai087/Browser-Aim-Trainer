@@ -88,7 +88,7 @@ export class Projection {
    * Project an angular radius to screen-space radius
    * This approximates the radius at the center of the target
    */
-  projectRadiusToScreen(angularRadiusDeg: number, distance: number = 1): number {
+  projectRadiusToScreen(angularRadiusDeg: number, _distance: number = 1): number {
     // For small angles, the screen radius is approximately:
     // screenRadius = focalLength * tan(angularRadius)
     const angularRadiusRad = (angularRadiusDeg * Math.PI) / 180;

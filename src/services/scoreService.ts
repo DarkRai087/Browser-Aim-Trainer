@@ -14,6 +14,10 @@ export interface LeaderboardEntry {
   timestamp: number;
 }
 
+interface StoredScore extends SessionStats {
+  savedAt: number;
+}
+
 const SCORES_KEY = 'aim-trainer-scores';
 const LEADERBOARD_KEY = 'aim-trainer-leaderboard';
 
@@ -26,10 +30,11 @@ export async function saveScore(stats: SessionStats): Promise<void> {
   
   try {
     const scores = getLocalScores();
-    scores.push({
+    const storedScore: StoredScore = {
       ...stats,
       savedAt: Date.now(),
-    });
+    };
+    scores.push(storedScore);
     localStorage.setItem(SCORES_KEY, JSON.stringify(scores));
   } catch (e) {
     console.error('[ScoreService] Failed to save score:', e);
@@ -108,7 +113,7 @@ export async function submitToLeaderboard(
 /**
  * Helper to get scores from localStorage
  */
-function getLocalScores(): SessionStats[] {
+function getLocalScores(): StoredScore[] {
   const stored = localStorage.getItem(SCORES_KEY);
   return stored ? JSON.parse(stored) : [];
 }
