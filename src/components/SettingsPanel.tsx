@@ -6,6 +6,7 @@ import { useState, useEffect, memo, useCallback } from 'react';
 import { settingsStore } from '../state/settingsStore';
 import { DEFAULT_CONFIG } from '../engine/types';
 import type { EngineConfig } from '../engine/types';
+import { CrosshairCustomizer } from './CrosshairCustomizer';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -175,9 +176,13 @@ export const SettingsPanel = memo(function SettingsPanel({ isOpen, onClose }: Se
             </div>
           </div>
 
+          <div className="settings-section">
+            <CrosshairCustomizer />
+          </div>
+
           <div className="settings-actions">
             <button onClick={handleReset} className="reset-button">
-              Reset to Defaults
+              Reset Mouse Settings
             </button>
           </div>
         </div>

@@ -10,6 +10,8 @@ import { TargetManager } from './TargetManager';
 import type { TargetManagerConfig } from './TargetManager';
 import { HitDetection } from './HitDetection';
 import { DEFAULT_CONFIG } from './types';
+import { DEFAULT_CROSSHAIR } from './crosshairTypes';
+import type { CrosshairConfig } from './crosshairTypes';
 import type {
   EngineConfig,
   SessionStats,
@@ -45,6 +47,8 @@ export class GameLoop {
 
   private mouseX: number = 0;
   private mouseY: number = 0;
+  
+  private crosshairConfig: CrosshairConfig = DEFAULT_CROSSHAIR;
 
   constructor(canvas: HTMLCanvasElement, config: Partial<EngineConfig> = {}) {
     this.canvas = canvas;
@@ -295,32 +299,80 @@ export class GameLoop {
    * Draw crosshair at a specific position
    */
   private drawCrosshairAt(x: number, y: number): void {
-    const size = 12;
-    const gap = 5;
+    const cfg = this.crosshairConfig;
+    const alpha = cfg.opacity / 100;
     
-    this.ctx.strokeStyle = '#00ff00';
-    this.ctx.lineWidth = 2;
+    this.ctx.save();
+    this.ctx.globalAlpha = alpha;
     
-    // Horizontal lines
-    this.ctx.beginPath();
-    this.ctx.moveTo(x - size - gap, y);
-    this.ctx.lineTo(x - gap, y);
-    this.ctx.moveTo(x + gap, y);
-    this.ctx.lineTo(x + size + gap, y);
+    const { size, gap, thickness, dot, dotSize, outline, outlineThickness, tStyle, style } = cfg;
     
-    // Vertical lines
-    this.ctx.moveTo(x, y - size - gap);
-    this.ctx.lineTo(x, y - gap);
-    this.ctx.moveTo(x, y + gap);
-    this.ctx.lineTo(x, y + size + gap);
+    // Helper to draw a line with optional outline
+    const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
+      if (outline) {
+        this.ctx.strokeStyle = cfg.outlineColor;
+        this.ctx.lineWidth = thickness + outlineThickness * 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x1, y1);
+        this.ctx.lineTo(x2, y2);
+        this.ctx.stroke();
+      }
+      this.ctx.strokeStyle = cfg.color;
+      this.ctx.lineWidth = thickness;
+      this.ctx.beginPath();
+      this.ctx.moveTo(x1, y1);
+      this.ctx.lineTo(x2, y2);
+      this.ctx.stroke();
+    };
     
-    this.ctx.stroke();
+    // Draw based on style
+    if (style === 'circle') {
+      // Circle style
+      if (outline) {
+        this.ctx.strokeStyle = cfg.outlineColor;
+        this.ctx.lineWidth = thickness + outlineThickness * 2;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, size, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+      this.ctx.strokeStyle = cfg.color;
+      this.ctx.lineWidth = thickness;
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, size, 0, Math.PI * 2);
+      this.ctx.stroke();
+    } else if (style === 'dot') {
+      // Dot only - no lines
+    } else {
+      // Default/classic/cross styles - draw lines
+      if (size > 0) {
+        // Left line
+        drawLine(x - size - gap, y, x - gap, y);
+        // Right line
+        drawLine(x + gap, y, x + size + gap, y);
+        // Top line (unless T-style)
+        if (!tStyle) {
+          drawLine(x, y - size - gap, x, y - gap);
+        }
+        // Bottom line
+        drawLine(x, y + gap, x, y + size + gap);
+      }
+    }
     
     // Center dot
-    this.ctx.fillStyle = '#00ff00';
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, 2, 0, Math.PI * 2);
-    this.ctx.fill();
+    if (dot && dotSize > 0) {
+      if (outline) {
+        this.ctx.fillStyle = cfg.outlineColor;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, dotSize + outlineThickness, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+      this.ctx.fillStyle = cfg.color;
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, dotSize, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+    
+    this.ctx.restore();
   }
 
   /**
@@ -492,6 +544,20 @@ export class GameLoop {
    */
   updateTargetConfig(config: Partial<TargetManagerConfig>): void {
     this.targetManager.updateConfig(config);
+  }
+
+  /**
+   * Update crosshair configuration
+   */
+  setCrosshairConfig(config: CrosshairConfig): void {
+    this.crosshairConfig = { ...config };
+  }
+
+  /**
+   * Get current crosshair configuration
+   */
+  getCrosshairConfig(): CrosshairConfig {
+    return { ...this.crosshairConfig };
   }
 
   /**

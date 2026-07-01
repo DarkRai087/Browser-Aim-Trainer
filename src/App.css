@@ -713,3 +713,398 @@ body {
     gap: 10px;
   }
 }
+
+/* ─────────────────────────────────────────
+   Crosshair Customizer
+───────────────────────────────────────── */
+.crosshair-customizer h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+.crosshair-customizer h4 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 16px 0 10px;
+}
+
+.crosshair-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.crosshair-preview-canvas {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #1a1a2e;
+}
+
+.crosshair-customizer .setting-row {
+  margin-bottom: 14px;
+}
+
+.crosshair-customizer .setting-row label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.crosshair-customizer .checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.crosshair-customizer .checkbox-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.crosshair-customizer .checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #00ff88;
+  cursor: pointer;
+}
+
+.crosshair-customizer .setting-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.crosshair-customizer .setting-input-group.inline {
+  flex: 1;
+}
+
+.crosshair-customizer .value-display {
+  min-width: 32px;
+  text-align: right;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-variant-numeric: tabular-nums;
+}
+
+.color-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-picker {
+  width: 40px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  padding: 0;
+}
+
+.color-picker.small {
+  width: 28px;
+  height: 24px;
+}
+
+.color-picker::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.color-picker::-webkit-color-swatch {
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.color-text {
+  width: 80px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+.preset-select,
+.style-select {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.preset-select:focus,
+.style-select:focus {
+  border-color: #00ff88;
+}
+
+.preset-select option,
+.style-select option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.crosshair-codes {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.code-section {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.code-display,
+.code-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.75rem;
+  font-family: monospace;
+}
+
+.code-input.error {
+  border-color: #ff4444;
+  animation: shake 0.3s ease;
+}
+
+.code-input.success {
+  border-color: #00ff88;
+  background: rgba(0, 255, 136, 0.1);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.import-section {
+  flex-wrap: wrap;
+}
+
+.cs2-detected {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #ff9500;
+}
+
+.cs2-badge {
+  padding: 2px 6px;
+  background: linear-gradient(135deg, #ff9500, #ff6b00);
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.code-hint {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* CS2 Manual Import */
+.cs2-manual-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin-top: 12px;
+  background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 107, 0, 0.1));
+  border: 1px solid rgba(255, 149, 0, 0.3);
+  border-radius: 8px;
+  color: #ff9500;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cs2-manual-toggle:hover {
+  background: linear-gradient(135deg, rgba(255, 149, 0, 0.2), rgba(255, 107, 0, 0.2));
+}
+
+.cs2-manual-settings {
+  margin-top: 12px;
+  padding: 16px;
+  background: rgba(255, 149, 0, 0.05);
+  border: 1px solid rgba(255, 149, 0, 0.2);
+  border-radius: 8px;
+}
+
+.cs2-help {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 12px;
+}
+
+.cs2-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.cs2-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cs2-field label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+}
+
+.cs2-field input,
+.cs2-field select {
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.cs2-field input:focus,
+.cs2-field select:focus {
+  border-color: #ff9500;
+  outline: none;
+}
+
+.cs2-field select option {
+  background: #1a1a2e;
+}
+
+.cs2-checkboxes {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.cs2-checkboxes label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.cs2-checkboxes input[type="checkbox"] {
+  accent-color: #ff9500;
+}
+
+.cs2-apply-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #ff9500, #ff6b00);
+  border: none;
+  border-radius: 6px;
+  color: #000;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cs2-apply-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+}
+
+.export-btn,
+.import-btn {
+  padding: 8px 16px;
+  background: rgba(0, 255, 136, 0.15);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 6px;
+  color: #00ff88;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.export-btn:hover,
+.import-btn:hover {
+  background: rgba(0, 255, 136, 0.25);
+}
+
+.import-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.import-btn.cs2 {
+  background: linear-gradient(135deg, rgba(255, 149, 0, 0.2), rgba(255, 107, 0, 0.2));
+  border-color: rgba(255, 149, 0, 0.4);
+  color: #ff9500;
+}
+
+.import-btn.cs2:hover {
+  background: linear-gradient(135deg, rgba(255, 149, 0, 0.3), rgba(255, 107, 0, 0.3));
+}
+
+.import-btn.success {
+  background: rgba(0, 255, 136, 0.3);
+  border-color: #00ff88;
+  color: #00ff88;
+}
+
+.crosshair-customizer .reset-button {
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crosshair-customizer .reset-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}

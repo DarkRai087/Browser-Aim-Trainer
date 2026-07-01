@@ -7,6 +7,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { GameLoop } from '../engine/GameLoop';
 import type { SessionStats, GameState, EngineConfig } from '../engine/types';
 import { settingsStore } from '../state/settingsStore';
+import { crosshairStore } from '../state/crosshairStore';
 import { saveScore } from '../services/scoreService';
 
 interface UseGameEngineReturn {
@@ -69,6 +70,7 @@ export function useGameEngine(): UseGameEngineReturn {
     });
 
     gameLoop.setCallbacks(handleStatsUpdate, handleGameStateChange);
+    gameLoop.setCrosshairConfig(crosshairStore.getConfig());
     gameLoopRef.current = gameLoop;
     
     gameLoop.renderIdle();
@@ -121,14 +123,22 @@ export function useGameEngine(): UseGameEngineReturn {
 
     window.addEventListener('resize', handleResize);
 
-    const unsubscribe = settingsStore.subscribe((settings) => {
+    const unsubscribeSettings = settingsStore.subscribe((settings) => {
       gameLoopRef.current?.updateConfig(settings);
+    });
+
+    const unsubscribeCrosshair = crosshairStore.subscribe((config) => {
+      gameLoopRef.current?.setCrosshairConfig(config);
+      if (!gameLoopRef.current?.getGameState().isRunning) {
+        gameLoopRef.current?.renderIdle();
+      }
     });
 
     return () => {
       clearTimeout(initTimeout);
       window.removeEventListener('resize', handleResize);
-      unsubscribe();
+      unsubscribeSettings();
+      unsubscribeCrosshair();
       gameLoopRef.current?.destroy();
       gameLoopRef.current = null;
     };
