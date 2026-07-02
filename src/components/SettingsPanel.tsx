@@ -67,13 +67,13 @@ export const SettingsPanel = memo(function SettingsPanel({ isOpen, onClose }: Se
       <div className="settings-panel" onClick={e => e.stopPropagation()}>
         <div className="settings-header">
           <h2>Settings</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+          {/* <button className="close-button" onClick={onClose}>×</button> */}
         </div>
 
         <div className="settings-content">
           <div className="settings-section">
             <h3>Mouse Settings</h3>
-            
+
             <div className="setting-row">
               <label htmlFor="sensitivity">Sensitivity</label>
               <div className="setting-input-group">
@@ -144,7 +144,7 @@ export const SettingsPanel = memo(function SettingsPanel({ isOpen, onClose }: Se
 
           <div className="settings-section">
             <h3>Display Settings</h3>
-            
+
             <div className="setting-row">
               <label htmlFor="fov">Field of View</label>
               <div className="setting-input-group">
