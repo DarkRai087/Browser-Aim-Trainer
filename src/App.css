@@ -337,6 +337,8 @@ body {
   text-align: center;
   outline: none;
   transition: border-color 0.2s ease;
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .number-input.wide {
@@ -347,9 +349,15 @@ body {
   border-color: #00ff88;
 }
 
-.number-input::-webkit-inner-spin-button,
-.number-input::-webkit-outer-spin-button {
-  opacity: 1;
+.settings-panel input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.settings-panel input[type="number"]::-webkit-inner-spin-button,
+.settings-panel input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .unit {

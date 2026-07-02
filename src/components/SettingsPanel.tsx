@@ -1,7 +1,3 @@
-/**
- * SettingsPanel - Sensitivity, DPI, FOV inputs
- */
-
 import { useState, useEffect, memo, useCallback } from 'react';
 import { settingsStore } from '../state/settingsStore';
 import type { EngineConfig } from '../engine/types';
